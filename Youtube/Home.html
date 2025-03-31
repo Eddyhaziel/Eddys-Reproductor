@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor de Música</title>
+    <style>
+        body {
+            text-align: center;
+            background: url('https://source.unsplash.com/1600x900/?music') no-repeat center center/cover;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        #player-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 50px;
+            width: 90%;
+            max-width: 640px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 24px;
+            background-color: transparent;
+            border: none;
+            color: black; /* Iconos en color negro */
+            cursor: pointer;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        h2 {
+            color: black;
+        }
+        iframe {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            border: none;
+        }
+        .buttons-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Estilo para las barras de progreso tipo ondas */
+        #progress-container {
+            width: 90%;
+            max-width: 300px;
+            height: 100px;
+            display: flex;
+            justify-content: space-evenly;
+            margin-top: 20px;
+            align-items: flex-end;
+        }
+
+        .progress-bar {
+            width: 5px;
+            height: 0;
+            background-color: #1DB954;
+            transition: height 0.1s;
+        }
+
+        @media (max-width: 600px) {
+            button {
+                font-size: 20px;
+                padding: 10px;
+            }
+            #progress-container {
+                max-width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Reproductor de Música</h1>
+    <div id="player-container">
+        <div id="player"></div>
+        <h2 id="song-title">Cargando...</h2>
+        <div id="progress-container">
+            <!-- Barras de progreso en forma de ondas -->
+            <div class="progress-bar" id="bar1"></div>
+            <div class="progress-bar" id="bar2"></div>
+            <div class="progress-bar" id="bar3"></div>
+            <div class="progress-bar" id="bar4"></div>
+            <div class="progress-bar" id="bar5"></div>
+            <div class="progress-bar" id="bar6"></div>
+            <div class="progress-bar" id="bar7"></div>
+            <div class="progress-bar" id="bar8"></div>
+            <div class="progress-bar" id="bar9"></div>
+            <div class="progress-bar" id="bar10"></div>
+        </div>
+        <div class="buttons-container">
+            <button onclick="prevSong()">⏮</button>
+            <button onclick="togglePlayPause()">⏯</button>
+            <button onclick="nextSong()">⏭</button>
+        </div>
+    </div>
+
+    <script>
+        let playlist = [];
+        let currentIndex = 0;
+        let player;
+
+        async function fetchPlaylist() {
+            const apiKey = 'AIzaSyC6oqGTaMKWKZ94U-_TeH8fIbUgehtPU-w';
+            const playlistId = 'PLxQS-4QRBx4_Qyyzgkby0fFUUknLrxaYO&pp=gAQB';
+            const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=25&key=${apiKey}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                playlist = data.items.map(item => ({
+                    videoId: item.snippet.resourceId.videoId,
+                    title: item.snippet.title
+                }));
+                loadVideo(0);
+            } catch (error) {
+                console.error('Error al obtener la playlist:', error);
+            }
+        }
+
+        function loadVideo(index) {
+            if (playlist.length === 0) return;
+            currentIndex = index;
+            const videoId = playlist[index].videoId;
+            const title = playlist[index].title;
+            document.getElementById('song-title').innerText = title;
+            player.loadVideoById(videoId);
+        }
+
+        function nextSong() {
+            if (currentIndex < playlist.length - 1) {
+                loadVideo(currentIndex + 1);
+            }
+        }
+
+        function prevSong() {
+            if (currentIndex > 0) {
+                loadVideo(currentIndex - 1);
+            }
+        }
+
+        function togglePlayPause() {
+            const state = player.getPlayerState();
+            if (state === 1) player.pauseVideo();
+            else if (state === 2) player.playVideo();
+        }
+
+        function updateProgressBar() {
+            if (player && player.getPlayerState() === 1) {
+                const currentTime = player.getCurrentTime();
+                const duration = player.getDuration();
+                const progress = (currentTime / duration);
+                // Actualizando las barras de progreso de forma dinámica
+                for (let i = 1; i <= 10; i++) {
+                    const bar = document.getElementById(`bar${i}`);
+                    const barHeight = Math.random() * 100 * progress; // Variar la altura de las barras aleatoriamente
+                    bar.style.height = `${barHeight}%`;
+                }
+            }
+            requestAnimationFrame(updateProgressBar);
+        }
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '360',
+                width: '640',
+                videoId: '',
+                playerVars: { 'autoplay': 1, 'controls': 1 },
+                events: {
+                    'onReady': () => {
+                        fetchPlaylist();
+                        updateProgressBar();
+                    },
+                    'onStateChange': (event) => {
+                        if (event.data === 0) nextSong();
+                    }
+                }
+            });
+        }
+    </script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
